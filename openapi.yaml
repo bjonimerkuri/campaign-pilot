@@ -1,0 +1,151 @@
+openapi: 3.0.3
+info:
+  title: Campaign Copilot API
+  version: 1.0.0
+  description: Multi-tenant serverless API that generates advertising copy with an LLM.
+security:
+  - ApiKey: []
+paths:
+  /campaigns:
+    post:
+      summary: Create a campaign and request copy generation
+      operationId: createCampaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCampaign'
+      responses:
+        '202':
+          description: Campaign accepted, copy is generated asynchronously
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+    get:
+      summary: List the latest campaigns of the authenticated tenant
+      operationId: listCampaigns
+      responses:
+        '200':
+          description: Campaigns, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Campaign'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+  /campaigns/{id}:
+    get:
+      summary: Get a campaign and its generated copy
+      operationId: getCampaign
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The campaign
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    ApiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+  schemas:
+    CreateCampaign:
+      type: object
+      required: [name, product, audience]
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        product:
+          type: string
+          maxLength: 200
+        audience:
+          type: string
+          maxLength: 200
+        tone:
+          type: string
+          enum: [professional, playful, urgent, friendly]
+          default: professional
+        variantCount:
+          type: integer
+          minimum: 1
+          maximum: 5
+          default: 3
+    CopyVariant:
+      type: object
+      properties:
+        headline:
+          type: string
+        body:
+          type: string
+        cta:
+          type: string
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        product:
+          type: string
+        audience:
+          type: string
+        tone:
+          type: string
+        variantCount:
+          type: integer
+        status:
+          type: string
+          enum: [PENDING, READY, FAILED]
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/CopyVariant'
+        errorMessage:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
